@@ -2,7 +2,7 @@ import os
 from os import environ
 import sqlite3
 from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort, jsonify
-from config import Config, DevConfig
+# from config import Config, DevConfig
 
 # Using a production configuration
 # app.config.from_object('config.ProdConfig')
@@ -43,7 +43,7 @@ app.config['SESSION_PERMANENT'] = False
 # connect to database
 def connect_db():
     """Connects to the database."""
-    rv = sqlite3.connect(Config.DATABASE)
+    rv = sqlite3.connect(app.config["DATABASE"])
     rv.row_factory = sqlite3.Row
     return rv
 

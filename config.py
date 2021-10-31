@@ -1,9 +1,9 @@
 from os import environ
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from pathlib import Path
 
 basedir = Path(__file__).parent.absolute()
-load_dotenv(Path(__file__).parent / 'project/.env')
+#load_dotenv(Path(__file__).parent / 'project/.env')
 
 
 class Config:
