@@ -2,6 +2,7 @@ import os
 import sqlite3
 from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort
 from config import Config, DevConfig
+
 # Using a production configuration
 # app.config.from_object('config.ProdConfig')
 
@@ -18,6 +19,8 @@ app = Flask(__name__)
 
 # Using a production configuration
 app.config.from_object(__name__)
+
+
 # app.config.from_object('config.Config')
 # app.config.from_object('config.ProdConfig')
 #
@@ -68,18 +71,18 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    '''User login/auth/session mgmt'''
+    """User login/authentication/session management."""
     error = None
     if request.method == 'POST':
-        if request.form['username'] != Config.USERNAME:
+        if request.form['username'] != app.config['USERNAME']:
             error = 'Invalid username'
-        elif request.form['password'] != Config.PASSWORD:
+        elif request.form['password'] != app.config['PASSWORD']:
             error = 'Invalid password'
         else:
             session['logged_in'] = True
             flash('You were logged in')
             return redirect(url_for('index'))
-        return render_template('login.html', error=error)
+    return render_template('login.html', error=error)
 
 
 @app.route('/logout')
@@ -88,6 +91,7 @@ def logout():
     session.pop('logged_in', None)
     flash('You were logged out')
     return redirect(url_for('index'))
+
 
 @app.route('/add', methods=['POST'])
 def add_entry():
@@ -103,7 +107,8 @@ def add_entry():
     flash('New entry was successfully posted')
     return redirect(url_for('index'))
 
-
+with app.app_context():
+    init_db()
 
 if __name__ == "__main__":
     app.run()
