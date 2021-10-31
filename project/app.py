@@ -1,20 +1,35 @@
+import os
 import sqlite3
-from flask import Flask, g
+from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort
+from config import Config, DevConfig
+# Using a production configuration
+# app.config.from_object('config.ProdConfig')
 
-
-# configuration
+# Using a development configuration
+# app.config.from_object('config.DevConfig')
 DATABASE = "flaskr.db"
+USERNAME = "admin"
+PASSWORD = "admin"
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # create and initialize a new Flask app
+
 app = Flask(__name__)
 
-# load the config
+# Using a production configuration
 app.config.from_object(__name__)
+# app.config.from_object('config.Config')
+# app.config.from_object('config.ProdConfig')
+#
+# # Using a development configuration
+# app.config.from_object('config.DevConfig')
+# configuration
+
 
 # connect to database
 def connect_db():
     """Connects to the database."""
-    rv = sqlite3.connect(app.config["DATABASE"])
+    rv = sqlite3.connect(Config.DATABASE)
     rv.row_factory = sqlite3.Row
     return rv
 
@@ -43,8 +58,51 @@ def close_db(error):
 
 
 @app.route("/")
-def hello():
-    return "Hello, World!"
+def index():
+    '''Searches the db for entries, then displays them'''
+    db = get_db()
+    cur = db.execute('select * from entries order by id desc')
+    entries = cur.fetchall()
+    return render_template('index.html', entries=entries)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    '''User login/auth/session mgmt'''
+    error = None
+    if request.method == 'POST':
+        if request.form['username'] != Config.USERNAME:
+            error = 'Invalid username'
+        elif request.form['password'] != Config.PASSWORD:
+            error = 'Invalid password'
+        else:
+            session['logged_in'] = True
+            flash('You were logged in')
+            return redirect(url_for('index'))
+        return render_template('login.html', error=error)
+
+
+@app.route('/logout')
+def logout():
+    """User logout/authentication/session management."""
+    session.pop('logged_in', None)
+    flash('You were logged out')
+    return redirect(url_for('index'))
+
+@app.route('/add', methods=['POST'])
+def add_entry():
+    """Add new post to database."""
+    if not session.get('logged_in'):
+        abort(401)
+    db = get_db()
+    db.execute(
+        'insert into entries (title, text) values (?, ?)',
+        [request.form['title'], request.form['text']]
+    )
+    db.commit()
+    flash('New entry was successfully posted')
+    return redirect(url_for('index'))
+
 
 
 if __name__ == "__main__":

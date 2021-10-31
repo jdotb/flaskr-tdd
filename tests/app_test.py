@@ -1,10 +1,12 @@
 import pytest
 import os
 from pathlib import Path
+
+import config
 from project.app import app, init_db
+from config import DevConfig, Config
 
 TEST_DB = "test.db"
-
 
 @pytest.fixture
 def client():
@@ -12,13 +14,13 @@ def client():
     app.config["TESTING"] = True
     app.config["DATABASE"] = BASE_DIR.joinpath(TEST_DB)
 
-    init_db()  # Setup
-    yield app.test_client()  # Tests run here
-    init_db()  # Teardown
+    init_db() # setup
+    yield app.test_client() # tests run here
+    init_db() # teardown
 
 
 def login(client, username, password):
-    '''login helper fn'''
+    """Login helper function"""
     return client.post(
         "/login",
         data=dict(username=username, password=password),
@@ -27,7 +29,7 @@ def login(client, username, password):
 
 
 def logout(client):
-    '''logout helper fn'''
+    """Logout helper function"""
     return client.get("/logout", follow_redirects=True)
 
 
@@ -37,20 +39,20 @@ def test_index(client):
 
 
 def test_database(client):
-    '''initial test - make sure db exists'''
+    """initial test. ensure that the database exists"""
     tester = Path("test.db").is_file()
     assert tester
 
 
 def test_empty_db(client):
-    '''make sure db is blank'''
-    rv = client.get('/')
+    """Ensure database is blank"""
+    rv = client.get("/")
     assert b"No entries yet. Add some!" in rv.data
 
 
 def test_login_logout(client):
-    '''Test login/out with helper fun'''
-    rv = login(client, app.config['USERNAME'], app.config['PASSWORD'])
+    """Test login and logout using helper functions"""
+    rv = login(client, app.config["USERNAME"], app.config["PASSWORD"])
     assert b"You were logged in" in rv.data
     rv = logout(client)
     assert b"You were logged out" in rv.data
@@ -71,16 +73,3 @@ def test_messages(client):
     assert b"No entries here so far" not in rv.data
     assert b"&lt;Hello&gt;" in rv.data
     assert b"<strong>HTML</strong> allowed here" in rv.data
-
-
-def test_index():
-    tester = app.test_client()
-    response = tester.get("/", content_type="html/text")
-
-    assert response.status_code == 200
-    assert response.data == b"Hello, World!"
-
-
-def test_db():
-    init_db()
-    assert Path('flaskr.db').is_file()
