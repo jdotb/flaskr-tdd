@@ -1,6 +1,7 @@
 import os
+from os import environ
 import sqlite3
-from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort
+from flask import Flask, g, render_template, request, session, flash, redirect, url_for, abort, jsonify
 from config import Config, DevConfig
 
 # Using a production configuration
@@ -8,10 +9,12 @@ from config import Config, DevConfig
 
 # Using a development configuration
 # app.config.from_object('config.DevConfig')
+
 DATABASE = "flaskr.db"
 USERNAME = "admin"
 PASSWORD = "admin"
 SECRET_KEY = os.environ.get('SECRET_KEY')
+
 
 # create and initialize a new Flask app
 
@@ -19,15 +22,23 @@ app = Flask(__name__)
 
 # Using a production configuration
 app.config.from_object(__name__)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 
+# generate secret keys
+#   >>> import uuid
+#   >>> uuid.uuid4().hex
+#   '3d6f45a5fc12445dbac2f59c3b6c7cb1'
 
-# app.config.from_object('config.Config')
-# app.config.from_object('config.ProdConfig')
-#
-# # Using a development configuration
-# app.config.from_object('config.DevConfig')
-# configuration
+# >>> import secrets
+# >>> secrets.token_urlsafe(16)
+# 'Drmhze6EPcv0fN_81Bj-nA'
+# >>> secrets.token_hex(16)
+# '8f42a73054b1749f8f58848be5e6502c'
 
+# >>> import os
+# >>> os.urandom(12).hex()
+# 'f3cfe9ed8fae309f02079dbf'
 
 # connect to database
 def connect_db():
@@ -106,6 +117,20 @@ def add_entry():
     db.commit()
     flash('New entry was successfully posted')
     return redirect(url_for('index'))
+
+@app.route('/delete/<post_id>', methods=['GET'])
+def delete_entry(post_id):
+    """Delete post from database"""
+    result = {'status': 0, 'message': 'Error'}
+    try:
+        db = get_db()
+        db.execute('delete from entries where id=' + post_id)
+        db.commit()
+        result = {'status': 1, 'message': "Post Deleted"}
+    except Exception as e:
+        result = {'status': 0, 'message': repr(e)}
+    return jsonify(result)
+
 
 with app.app_context():
     init_db()
